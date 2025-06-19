@@ -1,0 +1,17 @@
+name: "License-Detection"
+backend: "onnxruntime"
+max_batch_size: 10
+input [
+  {
+    name: "input_image"
+    data_type: TYPE_FP32
+    dims: [3,640,640]
+  }
+]
+output[
+    {
+        name: "output1"
+        data_type: TYPE_FP32
+        dims: [5,-1]
+    }
+]

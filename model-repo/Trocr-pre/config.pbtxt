@@ -1,0 +1,32 @@
+backend: "python"
+max_batch_size: 0
+
+input [
+  {
+    name: "input_images" #original image
+    data_type: TYPE_FP32
+    dims: [ -1,3,640,640 ]  
+  },
+  {
+    name: "detection_bboxes" #bboxes of the cars or vehicles
+    data_type: TYPE_INT32
+    dims: [-1, 4 ]  
+  },
+  {
+    name: "det_bboxes" #bboxes of the licenses
+    data_type: TYPE_FP32
+    dims: [ -1, 4 ] 
+  },
+    {
+    name: "bbox_batch_index" #this tells me that this license plate bbox corresponds to which car bbox so for eg: lets say at index 2 it shows me 1 this means that the bbox at 2nd index in det_bboxes crosspends to 1st bbox in detection_bboxes
+    data_type: TYPE_INT32
+    dims: [ -1 ]  # [total_boxes] - tells which image each box belongs to
+  }
+]
+output[
+    {
+        name: "Cropped_Licenses"
+        data_type: TYPE_FP32
+        dims: [-1,3,-1,-1]
+    }
+]

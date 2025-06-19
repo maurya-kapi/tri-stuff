@@ -1,0 +1,17 @@
+name: "PaddleOCR"
+backend: "onnxruntime"
+max_batch_size: 10
+input[
+  {
+    name: "x"
+    data_type: TYPE_FP32
+    dims: [3,48,-1]
+  }
+]
+output[
+    {
+        name: "fetch_name_0"
+        data_type: TYPE_FP32
+        dims: [-1,97]
+    }
+]

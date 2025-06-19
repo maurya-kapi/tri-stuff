@@ -1,0 +1,38 @@
+name: "PaddleOCR-Preprocessing"
+backend: "python"
+max_batch_size: 0  
+input [
+    {
+        name: "image"
+        data_type: TYPE_FP32
+        dims: [-1,3,1080,1920]
+    }
+    {
+        name: "det_bboxes"
+        data_type: TYPE_FP32
+        dims: [ -1,4 ]
+    }
+]
+
+output [
+  {
+    name: "x"
+    data_type: TYPE_FP32
+    dims: [-1, 3, 48, 320]
+  },
+  {
+    name: "wh_ratio_list"
+    data_type: TYPE_FP32
+    dims: [-1]
+  },
+  {
+    name: "sorted_indices"
+    data_type: TYPE_INT32
+    dims: [-1]
+  },
+  {
+    name: "max_wh_ratio"
+    data_type: TYPE_FP32
+    dims: [1]
+  }
+]

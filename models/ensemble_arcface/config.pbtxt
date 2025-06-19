@@ -1,0 +1,54 @@
+platform: "ensemble"
+max_batch_size: 0
+input [
+    {
+        name: "image"
+        data_type:TYPE_UINT8,
+        dims: [-1, -1, -1]
+    }
+]
+output [
+    {
+        name: "embedding"
+        data_type: TYPE_FP32,
+        dims: [-1, 512]
+    },
+    {
+        name: "detection_bboxes"
+        data_type: TYPE_INT32
+        dims: [-1, 4]
+    }
+]
+ensemble_scheduling {
+    step [
+        {
+            model_name: "preprocess_face_arcface"
+            model_version: 1
+            input_map {
+                key: "image"
+                value: "image"
+            }
+            output_map {
+                key: "x"
+                value: "x"
+            },
+            output_map {
+                key: "detection_bboxes"
+                value: "detection_bboxes"
+            }
+        },
+        {
+            model_name: "arcface_onnx"
+            model_version: 1
+            input_map {
+                key: "x"
+                value: "x"
+            }
+            output_map {
+                key: "embedding"
+                value: "embedding"
+            }
+        }
+               
+    ]
+}

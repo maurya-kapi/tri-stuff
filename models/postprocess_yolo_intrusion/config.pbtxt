@@ -1,0 +1,27 @@
+backend: "python"
+input [
+    {
+        name: "INPUT_0"
+        dims: [1, 84, 8400]
+        data_type: TYPE_FP32
+    }
+]
+output [
+    {
+        name: "num_detections"
+        data_type: TYPE_INT32
+        dims: [1]
+    },
+    {
+        name: "detection_bboxes"
+        data_type: TYPE_FP32
+        dims: [-1, 4]
+    },
+    {
+        name: "detection_scores"
+        data_type: TYPE_FP32
+        dims: [-1]
+    }
+]
+
+instance_group [ { count: 8 }]

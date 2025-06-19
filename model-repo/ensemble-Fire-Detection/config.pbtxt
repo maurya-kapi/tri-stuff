@@ -1,0 +1,63 @@
+platform: "ensemble"
+max_batch_size: 0
+input [
+    {
+        name: "images"
+        data_type: TYPE_FP32
+        dims: [1,3,640,640]
+    }
+]
+output [
+    {
+        name: "num_detections"
+        data_type: TYPE_INT32
+        dims: [1]
+    },
+    {
+        name: "detection_bboxes"
+        data_type: TYPE_FP32
+        dims: [-1, 4]
+    },
+    {
+        name: "detection_scores"
+        data_type: TYPE_FP32
+        dims: [-1]
+    }
+]
+ensemble_scheduling {
+    step [
+        {
+            model_name: "Fire-Detection"
+            model_version: 1
+            input_map {
+                key: "images"
+                value: "images"
+            }
+            output_map {
+                key: "output0"
+                value: "output0"
+            }
+        },
+        {
+            model_name: "Fire-Detection-Postprocessing"
+            model_version: 1
+            input_map {
+                key: "output0"
+                value: "output0"
+            }
+            output_map {
+                key: "num_detections"
+                value: "num_detections"
+            }
+            output_map{
+                key: "detection_bboxes"
+                value: "detection_bboxes"
+            }
+            output_map{
+                key: "detection_scores"
+                value: "detection_scores"
+            }
+        }
+               
+    ]
+}

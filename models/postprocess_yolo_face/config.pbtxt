@@ -1,0 +1,35 @@
+backend: "python"
+input [
+    {
+        name: "INPUT_0"
+        data_type: TYPE_FP32
+        dims: [1, 80, 20, 20]
+    },
+    {
+        name: "INPUT_1"
+        data_type: TYPE_FP32
+        dims: [1, 80, 40, 40]
+    },
+    {
+        name: "INPUT_2"
+        data_type: TYPE_FP32
+        dims: [1, 80, 80, 80]
+    }
+]
+output [
+    {
+        name: "num_detections"
+        data_type: TYPE_INT32
+        dims: [1]
+    },
+    {
+        name: "detection_bboxes"
+        data_type: TYPE_FP32
+        dims: [-1, 4]
+    },
+    {
+        name: "detection_scores"
+        data_type: TYPE_FP32
+        dims: [-1]
+    }
+]
