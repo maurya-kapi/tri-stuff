@@ -185,7 +185,7 @@ def postprocess(output): # (self, input_image, output)
     #    print("old ", [np.array(bbox),np.array(sscore)])
     #    print("new",[final_boxes, final_scores])
        return [np.array(bbox),np.array(sscore)]
-session = ort.InferenceSession("model-repo/License-Detection/1/model.onnx", providers=['CPUExecutionProvider'])
+session = ort.InferenceSession("rec.onnx", providers=['CPUExecutionProvider'])
 for input_tensor in session.get_inputs():
     print("Name:", input_tensor.name)
     print("Shape:", input_tensor.shape)

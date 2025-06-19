@@ -4,12 +4,23 @@ import torch
 import triton_python_backend_utils as pb_utils
 import numpy as np
 import re
+import os
 class TritonPythonModel:
+    # def initialize(self, args):
+    #     self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    #     self.processor = TrOCRProcessor.from_pretrained("model-repo/trocr/1/hf_model/",tokenizer_kwargs={"use_fast": True},use_fast=True)
+    #     # self.processor = TrOCRProcessor.from_pretrained("microsoft/trocr-base-printed",tokenizer_kwargs={"use_fast": True},use_fast=True)
+    #     self.model = VisionEncoderDecoderModel.from_pretrained("/home/maurya_patel/tri-stuff/model-repo/trocr/1/hf_model")
+    #     #self.model = VisionEncoderDecoderModel.from_pretrained("microsoft/trocr-base-printed").to(self.device)
+    #     self.model.eval()
     def initialize(self, args):
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.processor = TrOCRProcessor.from_pretrained("microsoft/trocr-base-printed",tokenizer_kwargs={"use_fast": True},use_fast=True)
-        self.model = VisionEncoderDecoderModel.from_pretrained("microsoft/trocr-base-printed").to(self.device)
-        self.model.eval()
+        model_dir = os.path.join(os.path.dirname(__file__), "hf_model")
+        print("Resolved path to model:", model_dir)
+        print("Files inside model are :",os.listdir(model_dir))
+        print("Exists:", os.path.exists(os.path.join(model_dir, "preprocessor_config.json")))
+        self.processor = TrOCRProcessor.from_pretrained(model_dir)
+        self.model = VisionEncoderDecoderModel.from_pretrained(model_dir)
+        self.model.to("cuda")
     def filter_indian_number_plates(self,plates):
         # Regex for: 2 letters + 2 digits + 1-3 letters + 4 digits
         pattern = re.compile(r'^[A-Z]{2}\d{2}[A-Z]{1,3}\d{4}$')
