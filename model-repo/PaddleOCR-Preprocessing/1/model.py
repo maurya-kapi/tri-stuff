@@ -54,12 +54,17 @@ class TritonPythonModel:
                     continue
 
                 crop = image_hwc[y1_o:y2_o, x1_o:x2_o]
-                crop_chw = np.transpose(crop,(2,0,1))
-                crops.append(crop_chw)
-                print(crop_chw)
-                width_list.append(crop_chw.shape[1] / float(crop_chw.shape[0]))
+                
+                # crop_chw = np.transpose(crop,(2,0,1))
+                crops.append(crop)
+                # print(crop)
+                width_list.append(crop.shape[1] / float(crop.shape[0]))
             indices = np.argsort(np.array(width_list))
-            batch_num = img_num
+            # print("Indices", indices)
+            # print("Width List", width_list)
+            batch_num = indices.shape[0]
+            
+            # print("Batch Num", batch_num)
             max_wh_ratio = 0
             wh_ratio_list=[]
             norm_images=[]
@@ -68,10 +73,17 @@ class TritonPythonModel:
                 wh_ratio= w*1.0 / h
                 wh_ratio_list.append(wh_ratio)
                 max_wh_ratio = max(max_wh_ratio, wh_ratio)
+                # print("Before Resize")
+                # print(crops[indices[i]].shape)
                 norm_img=resize_norm_img_svtr(crops[indices[i]], (self.imgC, self.imgH, self.imgW))
+                # print("After Resize")
+                # print(norm_img.shape)
                 norm_img=norm_img[np.newaxis, :]
                 norm_images.append(norm_img)
-            norm_img_batch = np.concatenate(norm_images)
+            if len(norm_images) == 0:
+                norm_img_batch = np.zeros((0, self.imgC, self.imgH, self.imgW), dtype=np.float32)
+            else:
+                norm_img_batch = np.concatenate(norm_images)
             output_tensor = pb_utils.Tensor("x", norm_img_batch)
             wh_tensor = pb_utils.Tensor("wh_ratio_list", np.array(wh_ratio_list, dtype=np.float32))
             idx_tensor = pb_utils.Tensor("sorted_indices", np.array(indices, dtype=np.int32))
