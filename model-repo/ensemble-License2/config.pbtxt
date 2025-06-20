@@ -1,0 +1,120 @@
+platform: "ensemble"
+max_batch_size: 0
+input [
+    {
+        name: "image"
+        data_type: TYPE_FP32
+        dims: [1,3,1080,1920]
+    }
+]
+output [
+  {
+    name: "OUTPUT_TEXT"
+    data_type: TYPE_STRING
+    dims: [ -1 ]
+  }
+]
+ensemble_scheduling {
+    step [
+        {
+            model_name: "License-Preprocessing"
+            model_version: 1
+            input_map {
+                key: "image"
+                value: "image"
+            }
+            output_map {
+                key: "input_image"
+                value: "input_image"
+            }
+        },
+        {
+            model_name: "License-Detection"
+            model_version: 1
+            input_map {
+                key: "input_image"
+                value: "input_image"
+            }
+            output_map {
+                key: "output1"
+                value: "output1"
+            }
+        },
+        {
+            model_name: "License-Detection-Postprocessing"
+            model_version: 1
+            input_map{
+                key: "output1"
+                value: "output1"
+            }
+            output_map{
+                key: "det_bboxes"
+                value: "det_bboxes"
+            }
+        },
+        {
+            model_name: "PaddleOCR-Preprocessing"
+            model_version: 1
+            input_map{
+                key:"image"
+                value:"image"
+            }
+            input_map{
+                key:"det_bboxes"
+                value:"det_bboxes"
+            }
+            output_map{
+                key:"x"
+                value:"x"
+            }
+            output_map{
+                key:"wh_ratio_list"
+                value:"wh_ratio_list"
+            }
+            output_map{
+                key:"sorted_indices"
+                value:"sorted_indices"
+            }
+            output_map{
+                key:"max_wh_ratio"
+                value:"max_wh_ratio"
+            }
+        },
+        {
+            model_name:"PaddleOCR"
+            model_version: 1
+            input_map{
+                key:"x"
+                value:"x"
+            }
+            output_map{
+                key:"fetch_name_0"
+                value:"fetch_name_0"
+            }
+        },
+        {
+            model_name:"PaddleOCR-Postprocessing"
+            model_version: 1
+            input_map{
+                key:"fetch_name_0"
+                value:"fetch_name_0"
+            }
+            input_map{
+                key:"wh_ratio_list"
+                value:"wh_ratio_list"
+            }
+            input_map{
+                key:"sorted_indices"
+                value:"sorted_indices"
+            }
+            input_map{
+                key:"max_wh_ratio"
+                value:"max_wh_ratio"
+            }
+            output_map{
+                key:"OUTPUT_TEXT"
+                value:"OUTPUT_TEXT"
+            }
+        }         
+    ]
+}

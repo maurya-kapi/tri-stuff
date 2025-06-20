@@ -1,12 +1,12 @@
 name: "License-Preprocessing"
 backend: "python"
-max_batch_size: 64
+max_batch_size: 0
 
 input [
   {
     name: "image"
     data_type: TYPE_FP32
-    dims: [3, 1080, 1920]
+    dims: [-1,3, 1080, 1920]
   }
 ]
 
@@ -14,19 +14,13 @@ output [
   {
     name: "input_image"
     data_type: TYPE_FP32
-    dims: [3, 640, 640]
+    dims: [-1,3, 640, 640]
   }
 ]
 
 instance_group [
   {
     kind: KIND_GPU
-    count: 1
+    count: 2
   }
 ]
-
-dynamic_batching {
-  preferred_batch_size: [8, 16, 32]
-  max_queue_delay_microseconds: 50
-  preserve_ordering: false
-}

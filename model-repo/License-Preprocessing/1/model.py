@@ -52,77 +52,77 @@
 #             responses.append(inference_response)
 
 #         return responses
-import triton_python_backend_utils as pb_utils
-import torch
-from torch.utils.dlpack import to_dlpack, from_dlpack
-import time
-import os
+# import triton_python_backend_utils as pb_utils
+# import torch
+# from torch.utils.dlpack import to_dlpack, from_dlpack
+# import time
+# import os
 
-class TritonPythonModel:
-    def initialize(self, args):
-        self.target_h = 640
-        self.target_w = 640
-        torch.backends.cudnn.benchmark = True
+# class TritonPythonModel:
+#     def initialize(self, args):
+#         self.target_h = 640
+#         self.target_w = 640
+#         torch.backends.cudnn.benchmark = True
 
-        # Create log file path
-        self.log_file = "/tmp/license_preprocessing_timing.csv"
+#         # Create log file path
+#         self.log_file = "/tmp/license_preprocessing_timing.csv"
 
-        # Write CSV header if not already present
-        if not os.path.exists(self.log_file):
-            with open(self.log_file, "w") as f:
-                f.write("get_input_tensor,to_dlpack,from_dlpack,interpolate,contiguous,to_pb_tensor,append_response,total\n")
+#         # Write CSV header if not already present
+#         if not os.path.exists(self.log_file):
+#             with open(self.log_file, "w") as f:
+#                 f.write("get_input_tensor,to_dlpack,from_dlpack,interpolate,contiguous,to_pb_tensor,append_response,total\n")
 
-    def execute(self, requests):
-        responses = []
+#     def execute(self, requests):
+#         responses = []
 
-        for request in requests:
-            times = {}
-            start_total = time.perf_counter()
+#         for request in requests:
+#             times = {}
+#             start_total = time.perf_counter()
 
-            t0 = time.perf_counter()
-            input_tensor = pb_utils.get_input_tensor_by_name(request, "image")
-            times["get_input_tensor"] = time.perf_counter() - t0
+#             t0 = time.perf_counter()
+#             input_tensor = pb_utils.get_input_tensor_by_name(request, "image")
+#             times["get_input_tensor"] = time.perf_counter() - t0
 
-            t1 = time.perf_counter()
-            input_dlpack = input_tensor.to_dlpack()
-            times["to_dlpack"] = time.perf_counter() - t1
+#             t1 = time.perf_counter()
+#             input_dlpack = input_tensor.to_dlpack()
+#             times["to_dlpack"] = time.perf_counter() - t1
 
-            t2 = time.perf_counter()
-            input_batch = from_dlpack(input_dlpack)
-            times["from_dlpack"] = time.perf_counter() - t2
+#             t2 = time.perf_counter()
+#             input_batch = from_dlpack(input_dlpack)
+#             times["from_dlpack"] = time.perf_counter() - t2
 
-            t3 = time.perf_counter()
-            resized_batch = torch.nn.functional.interpolate(
-                input_batch,
-                size=(self.target_h, self.target_w),
-                mode="bilinear",
-                align_corners=False
-            )
-            times["interpolate"] = time.perf_counter() - t3
+#             t3 = time.perf_counter()
+#             resized_batch = torch.nn.functional.interpolate(
+#                 input_batch,
+#                 size=(self.target_h, self.target_w),
+#                 mode="bilinear",
+#                 align_corners=False
+#             )
+#             times["interpolate"] = time.perf_counter() - t3
 
-            t4 = time.perf_counter()
-            resized_batch = resized_batch.contiguous()
-            times["contiguous"] = time.perf_counter() - t4
+#             t4 = time.perf_counter()
+#             resized_batch = resized_batch.contiguous()
+#             times["contiguous"] = time.perf_counter() - t4
 
-            t5 = time.perf_counter()
-            out_tensor = pb_utils.Tensor.from_dlpack("input_image", to_dlpack(resized_batch))
-            times["to_pb_tensor"] = time.perf_counter() - t5
+#             t5 = time.perf_counter()
+#             out_tensor = pb_utils.Tensor.from_dlpack("input_image", to_dlpack(resized_batch))
+#             times["to_pb_tensor"] = time.perf_counter() - t5
 
-            t6 = time.perf_counter()
-            responses.append(pb_utils.InferenceResponse(output_tensors=[out_tensor]))
-            times["append_response"] = time.perf_counter() - t6
+#             t6 = time.perf_counter()
+#             responses.append(pb_utils.InferenceResponse(output_tensors=[out_tensor]))
+#             times["append_response"] = time.perf_counter() - t6
 
-            times["total"] = time.perf_counter() - start_total
+#             times["total"] = time.perf_counter() - start_total
 
-            # Append timing to file (in milliseconds)
-            with open(self.log_file, "a") as f:
-                f.write(",".join(f"{times[k]*1000:.3f}" for k in [
-                    "get_input_tensor", "to_dlpack", "from_dlpack",
-                    "interpolate", "contiguous", "to_pb_tensor",
-                    "append_response", "total"
-                ]) + "\n")
+#             # Append timing to file (in milliseconds)
+#             with open(self.log_file, "a") as f:
+#                 f.write(",".join(f"{times[k]*1000:.3f}" for k in [
+#                     "get_input_tensor", "to_dlpack", "from_dlpack",
+#                     "interpolate", "contiguous", "to_pb_tensor",
+#                     "append_response", "total"
+#                 ]) + "\n")
 
-        return responses
+#         return responses
 
 # import triton_python_backend_utils as pb_utils
 # import torch
@@ -157,91 +157,75 @@ class TritonPythonModel:
 #             responses.append(pb_utils.InferenceResponse(output_tensors=[out_tensor]))
 
 #         return responses
-# import triton_python_backend_utils as pb_utils
-# import torch
-# from torch.utils.dlpack import to_dlpack, from_dlpack
+import triton_python_backend_utils as pb_utils
+import torch
+from torch.utils.dlpack import to_dlpack, from_dlpack
 
-# class TritonPythonModel:
-#     def initialize(self, args):
-#         self.target_h = 640
-#         self.target_w = 640
-        
-#         # Enable optimizations
-#         torch.backends.cudnn.benchmark = True
-#         torch.backends.cudnn.allow_tf32 = True
-#         torch.backends.cuda.matmul.allow_tf32 = True
-        
-#         # Pre-allocate tensors for common batch sizes to avoid memory allocation overhead
-#         self.device = torch.cuda.current_device()
-#         self.preallocated_tensors = {}
-#         common_batch_sizes = [1, 2, 4, 8, 16, 32]
-        
-#         with torch.no_grad():
-#             for batch_size in common_batch_sizes:
-#                 self.preallocated_tensors[batch_size] = torch.empty(
-#                     (batch_size, 3, self.target_h, self.target_w),
-#                     dtype=torch.float32,
-#                     device=self.device,
-#                     memory_format=torch.channels_last
-#                 ).contiguous()
+class TritonPythonModel:
+    def initialize(self, args):
+        self.target_h = 640
+        self.target_w = 640
+        self.device = torch.device("cuda")
 
-#     def execute(self, requests):
-#         responses = []
-        
-#         # Process all requests in a single batch for maximum efficiency
-#         if len(requests) > 1:
-#             return self._batch_execute(requests)
-        
-#         with torch.no_grad():
-#             for request in requests:
-#                 # Get input tensor via DLPack (zero-copy)
-#                 input_tensor = pb_utils.get_input_tensor_by_name(request, "image")
-#                 input_dlpack = input_tensor.to_dlpack()
-#                 input_batch = from_dlpack(input_dlpack)
-                
-#                 batch_size = input_batch.size(0)
-                
-#                 # Resize the input batch
-#                 resized_batch = torch.nn.functional.interpolate(
-#                     input_batch,
-#                     size=(self.target_h, self.target_w),
-#                     mode="bilinear",
-#                     align_corners=False
-#                 ).contiguous()
-                
-#                 # Create output tensor using DLPack (zero-copy)
-#                 out_tensor = pb_utils.Tensor.from_dlpack("input_image", to_dlpack(resized_batch))
-#                 responses.append(pb_utils.InferenceResponse(output_tensors=[out_tensor]))
-        
-#         return responses
-    
-#     def _batch_execute(self, requests):
-#         """Handle multiple requests more efficiently by combining them"""
-#         responses = []
-        
-#         with torch.no_grad():
-#             # Collect all input tensors
-#             input_batches = []
-#             for request in requests:
-#                 input_tensor = pb_utils.get_input_tensor_by_name(request, "image")
-#                 input_dlpack = input_tensor.to_dlpack()
-#                 input_batch = from_dlpack(input_dlpack)
-#                 input_batches.append(input_batch)
-            
-#             # Process each request (they might have different batch sizes)
-#             for input_batch in input_batches:
-#                 resized_batch = torch.nn.functional.interpolate(
-#                     input_batch,
-#                     size=(self.target_h, self.target_w),
-#                     mode="bilinear",
-#                     align_corners=False
-#                 ).contiguous()
-                
-#                 out_tensor = pb_utils.Tensor.from_dlpack("input_image", to_dlpack(resized_batch))
-#                 responses.append(pb_utils.InferenceResponse(output_tensors=[out_tensor]))
-        
-#         return responses
+        # Enable high-performance GPU settings
+        torch.backends.cudnn.benchmark = True
+        torch.backends.cudnn.allow_tf32 = True
+        torch.backends.cuda.matmul.allow_tf32 = True
 
-#     def finalize(self):
-#         """Clean up pre-allocated tensors"""
-#         self.preallocated_tensors.clear()
+        # Optional: Use torch.compile (requires PyTorch ≥ 2.0)
+        try:
+            self.interpolator = torch.compile(torch.nn.functional.interpolate)
+        except Exception:
+            self.interpolator = torch.nn.functional.interpolate
+
+        # Preallocate output buffer for common batch sizes
+        self.preallocated = {}
+        for bs in [1, 2, 4, 8, 16, 32]:
+            self.preallocated[bs] = torch.empty(
+                (bs, 3, self.target_h, self.target_w),
+                dtype=torch.float32,
+                device=self.device,
+                memory_format=torch.channels_last
+            ).contiguous()
+
+    def execute(self, requests):
+        responses = []
+
+        with torch.no_grad():
+            for request in requests:
+                input_tensor = pb_utils.get_input_tensor_by_name(request, "image")
+                input_dlpack = input_tensor.to_dlpack()
+                input_batch = from_dlpack(input_dlpack).to(self.device)
+
+                # Convert to channels_last for performance
+                input_batch = input_batch.to(memory_format=torch.channels_last)
+
+                batch_size = input_batch.size(0)
+
+                # Use preallocated output buffer if available
+                out_buf = self.preallocated.get(batch_size, None)
+                if out_buf is None:
+                    out_buf = torch.empty(
+                        (batch_size, 3, self.target_h, self.target_w),
+                        dtype=torch.float32,
+                        device=self.device,
+                        memory_format=torch.channels_last
+                    ).contiguous()
+
+                # Resize
+                resized = self.interpolator(
+                    input_batch, size=(self.target_h, self.target_w),
+                    mode="bilinear", align_corners=False
+                )
+
+                # Ensure contiguity
+                resized = resized.contiguous()
+
+                # Create output tensor via DLPack
+                out_tensor = pb_utils.Tensor.from_dlpack("input_image", to_dlpack(resized))
+                responses.append(pb_utils.InferenceResponse(output_tensors=[out_tensor]))
+
+        return responses
+
+    def finalize(self):
+        self.preallocated.clear()
