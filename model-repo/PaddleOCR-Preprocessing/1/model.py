@@ -28,7 +28,7 @@ class TritonPythonModel:
             # Inputs
             image = pb_utils.get_input_tensor_by_name(request, "image").as_numpy()  # [1, 3, 920, 1080], FP32
             bboxes = pb_utils.get_input_tensor_by_name(request, "det_bboxes").as_numpy()  # [N, 4], FP32
-
+            print("bboxes are:", bboxes)
             # Convert to HWC uint8
             image_chw = image[0]  # [3, 920, 1080]
             image_hwc = np.transpose(image_chw, (1, 2, 0))  # [920, 1080, 3]
@@ -54,7 +54,9 @@ class TritonPythonModel:
                     continue
 
                 crop = image_hwc[y1_o:y2_o, x1_o:x2_o]
-                
+# Convert to grayscale and back to RGB (3-channel)
+                gray_crop = cv2.cvtColor(crop, cv2.COLOR_RGB2GRAY)
+                crop = cv2.cvtColor(gray_crop, cv2.COLOR_GRAY2RGB)
                 # crop_chw = np.transpose(crop,(2,0,1))
                 crops.append(crop)
                 # print(crop)
@@ -81,9 +83,10 @@ class TritonPythonModel:
                 norm_img=norm_img[np.newaxis, :]
                 norm_images.append(norm_img)
             if len(norm_images) == 0:
-                norm_img_batch = np.zeros((0, self.imgC, self.imgH, self.imgW), dtype=np.float32)
+                norm_img_batch = np.zeros((1, self.imgC, self.imgH, self.imgW), dtype=np.float32)
             else:
                 norm_img_batch = np.concatenate(norm_images)
+            #print("shape of x is ", norm_img_batch.shape)
             output_tensor = pb_utils.Tensor("x", norm_img_batch)
             wh_tensor = pb_utils.Tensor("wh_ratio_list", np.array(wh_ratio_list, dtype=np.float32))
             idx_tensor = pb_utils.Tensor("sorted_indices", np.array(indices, dtype=np.int32))

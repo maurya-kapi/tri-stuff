@@ -1,5 +1,6 @@
 name: "License-Detection"
-backend: "onnxruntime"
+platform: "tensorrt_plan"
+backend: "tensorrt"
 max_batch_size: 10
 input [
   {
@@ -8,10 +9,19 @@ input [
     dims: [3,640,640]
   }
 ]
-output[
-    {
-        name: "output1"
-        data_type: TYPE_FP32
-        dims: [5,-1]
-    }
+output [
+  {
+    name: "output1"
+    data_type: TYPE_FP32
+    dims: [5, -1]
+  }
 ]
+optimization {
+  execution_accelerators {
+    gpu_execution_accelerator {
+      name: "tensorrt"
+      parameters { key: "precision_mode"; value: "FP16" }
+      parameters { key: "max_workspace_size_bytes"; value: "1073741824" }
+    }
+  }
+}

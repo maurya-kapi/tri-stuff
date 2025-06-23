@@ -232,9 +232,13 @@ class TritonPythonModel:
             max_wh_ratio=max_wh_ratio
         )
         #print("Decoded results:", rec_result)
+        # Apply alphanumeric filter (remove all non-alphanumeric characters including spaces)
+        print("rec results",rec_result)
+        filtered_result = [re.sub(r'[^A-Za-z0-9]', '', rec[0]) for rec in rec_result]
+
         output_tensor = pb_utils.Tensor(
             "OUTPUT_TEXT",
-            np.array([rec[0] for rec in rec_result], dtype=object)
+            np.array(filtered_result, dtype=object)
         )
 
         response = pb_utils.InferenceResponse(output_tensors=[output_tensor])

@@ -35,14 +35,15 @@ class TritonPythonModel:
        # these poeple have not even given expected output variable type,shape.
        # Transpose and squeeze the output to match the expected shape
        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-   
+       
        # Convert to torch and move to GPU
-       output = torch.from_numpy(output).to(device)  # [N, 4 + num_classes]
+       output = torch.from_numpy(output).to(device)
+       #print(output)# [N, 4 + num_classes]
        #output = output.squeeze() 
     #    print("output shape ", output.shape)
     #    print(output)
        output=output.transpose(1, 0)
-    #    print("output shape ", output.shape)
+       #print("output shape ", output.shape)
     #    print(output)
        # Get class scores and corresponding predicted class
        class_scores, class_ids = torch.max(output[:, 4:], dim=1)
@@ -51,7 +52,7 @@ class TritonPythonModel:
        mask = class_scores >  self.confidence_thres
     #    print(mask)
        output = output[mask]
-    #    print(output)
+      # print(output)
        class_scores = class_scores[mask]
        class_ids = class_ids[mask]
    
@@ -74,7 +75,10 @@ class TritonPythonModel:
        keep = torchvision.ops.nms(boxes, class_scores,self.iou_thres)
        final_boxes = boxes[keep].detach().cpu().numpy().astype(int)
        final_scores = class_scores[keep].detach().cpu().numpy()
-       final_class_ids = class_ids[keep].detach().cpu().numpy()  
+       final_class_ids = class_ids[keep].detach().cpu().numpy()
+    #    print("final_boxes shape is ", final_boxes.shape)
+    #    print("final_scores shape is ", final_scores.shape)
+    #    print("final_class_ids shape is ", final_class_ids.shape)    
     #    print("final_boxes are", final_boxes)
     #    print("final_scores are", final_scores)
        return [np.array(final_boxes), np.array(final_scores), np.array(final_class_ids)]
