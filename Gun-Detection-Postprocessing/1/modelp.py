@@ -150,6 +150,7 @@ class TritonPythonModel:
             in_0 = pb_utils.get_input_tensor_by_name(request, "output0")
             outputs = from_dlpack(in_0.to_dlpack())
             print("outputs shape", outputs.shape)
+            print("Gun Inference")
             outputs = outputs[0]
             outputs2 = self.postprocess(outputs.cpu().detach().numpy())
             num_detections = torch.tensor(len(outputs2[0])).type(torch.int32)
@@ -158,7 +159,7 @@ class TritonPythonModel:
             # detection_bboxes = outputs2[0].type(torch.float32)
             # detection_scores = outputs2[1].type(torch.float32)
             num_detections = pb_utils.Tensor.from_dlpack("num_detections", to_dlpack(num_detections))
-            detection_bboxes = pb_utils.Tensor.from_dlpack("detection_bboxes", to_dlpack(detection_bboxes))
+            #detection_bboxes = pb_utils.Tensor.from_dlpack("detection_bboxes", to_dlpack(detection_bboxes))
             detection_scores = pb_utils.Tensor.from_dlpack("detection_scores", to_dlpack(detection_scores))
 
             inference_response = pb_utils.InferenceResponse(

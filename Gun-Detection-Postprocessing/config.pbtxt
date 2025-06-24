@@ -1,4 +1,4 @@
-name: "Fire-Detection-Postprocessing"
+name: "Gun-Detection-Postprocessing"
 backend: "python"
 max_batch_size: 0
 input [
@@ -18,10 +18,5 @@ output [
         name: "detection_bboxes"
         data_type: TYPE_FP32
         dims: [-1, 4]
-    },
-    {
-        name: "detection_scores"
-        data_type: TYPE_FP32
-        dims: [-1]
     }
 ]
