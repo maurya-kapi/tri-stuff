@@ -3,6 +3,157 @@ import cv2
 import triton_python_backend_utils as pb_utils
 import re
 import os
+states=[
+    "AP", "AR", "AS", "BR", "CG", "GA", "GJ", "HR", "HP", "JH",
+    "KA", "KL", "MP", "MH", "MN", "ML", "MZ", "NL", "OD", "PB",
+    "RJ", "SK", "TN", "TS", "TR", "UP", "UK", "WB", "AN", "CH",
+    "DN", "DL", "JK", "LA", "LD", "PY"
+]
+digits=["0","1","2","3","4","5","6","7","8","9"]
+chars = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
+                   'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',
+                   'U', 'V', 'W', 'X', 'Y', 'Z']
+
+char_map = {
+    '0': 1,  '1': 2,  '2': 3,  '3': 4,  '4': 5,
+    '5': 6,  '6': 7,  '7': 8,  '8': 9,  '9': 10,
+    ':': 11, ';': 12, '<': 13, '=': 14, '>': 15,
+    '?': 16, '@': 17, 'A': 18, 'B': 19, 'C': 20,
+    'D': 21, 'E': 22, 'F': 23, 'G': 24, 'H': 25,
+    'I': 26, 'J': 27, 'K': 28, 'L': 29, 'M': 30,
+    'N': 31, 'O': 32, 'P': 33, 'Q': 34, 'R': 35,
+    'S': 36, 'T': 37, 'U': 38, 'V': 39, 'W': 40,
+    'X': 41, 'Y': 42, 'Z': 43, '[': 44, '\\': 45,
+    ']': 46, '^': 47, '_': 48, '`': 49, 'a': 50,
+    'b': 51, 'c': 52, 'd': 53, 'e': 54, 'f': 55,
+    'g': 56, 'h': 57, 'i': 58, 'j': 59, 'k': 60,
+    'l': 61, 'm': 62, 'n': 63, 'o': 64, 'p': 65,
+    'q': 66, 'r': 67, 's': 68, 't': 69, 'u': 70,
+    'v': 71, 'w': 72, 'x': 73, 'y': 74, 'z': 75,
+    '{': 76, '|': 77, '}': 78, '~': 79, '!': 80,
+    '"': 81, '#': 82, '$': 83, '%': 84, '&': 85,
+    "'": 86, '(': 87, ')': 88, '*': 89, '+': 90,
+    ',': 91, '-': 92, '.': 93, '/': 94, ' ':96
+}
+def KapiDecoder(preds):
+    print(preds.shape)
+    # preds_idx = np.argmax(preds, axis=2)
+    # print(preds_idx.shape)
+    # pos=[]
+    # print(preds_idx[0][0])
+    # for i in range(preds_idx.shape[1]):
+    #     if(preds_idx[0][i]==0):
+    #         continue
+    #     else:
+    #         pos.append(i)
+    # print(pos)
+    final_ans=[]
+    for i in range(preds.shape[0]):
+        preds_idx=np.argmax(preds[i],axis=1)
+        print(preds_idx.shape)
+        pos=np.array([])
+        for j in range(preds_idx.shape[0]):
+            if preds_idx[j]==0 or preds_idx[j]==96:
+                continue
+            else:
+                #print("yes")
+                pos=np.append(pos,j)
+        # print("pos is")
+        # print(pos)
+        pos=pos.astype(np.uint8)
+        # print(pos[0])
+        # print(preds[0][int(pos[0])][32])
+        if(pos.shape[0]<9 or pos.shape[0]>12):
+            continue
+        ans=""
+        max_probs1=-1e9
+        max_probs2=-1e9
+        s_1=""
+        s_2=""
+        
+        # calculating the probavility of possible state codes in first and second index
+        for s in states:
+            first=s[0]
+            first=char_map[s[0]]
+            first=preds[i][int(pos[0])][first]
+            second=s[1]
+            second=char_map[s[1]]
+            second=preds[i][int(pos[1])][second]
+            probs_1=first+second
+            if probs_1>max_probs1:
+                max_probs1=probs_1
+                s_1=s
+            
+        #calculating the same for second and third
+        for s in states:
+            first=s[0]
+            first=char_map[s[0]]
+            first=preds[i][pos[1]][first]
+            second=s[1]
+            second=char_map[s[1]]
+            second=preds[i][pos[2]][second]
+            probs_2=first+second
+            if probs_2>max_probs2:
+                max_probs2=probs_2
+                s_2=s
+        first_t=0
+        if(max_probs1>=max_probs2):
+            ans+=s_1
+            first_t=1
+        else:
+            ans+=s_2
+        print(f"ans is {ans}")
+        #now find the next 2 digits
+        last_parsed=0
+        next_nums=[]
+        if first_t:
+            #next_nums=[2,3]
+            last_parsed=1
+        else:
+            #next_nums=[3,4]
+            last_parsed=2
+        next_nums=[last_parsed+1,last_parsed+2]
+        for n in next_nums:
+            idx=pos[n]
+            max_prob=-1e9
+            max_d=""
+            for d in digits:
+                char_idx=char_map[d]
+                prob=preds[i][idx][char_idx]
+                if prob>max_prob:
+                    max_prob=prob
+                    max_d=d
+            ans+=max_d
+        print(f"ans is {ans}")
+        last_parsed+=2
+        while(last_parsed+5<pos.shape[0]):
+            idx=pos[last_parsed+1]
+            max_prob=-1e9
+            max_c=""
+            for c in chars:
+                char_idx=char_map[c]
+                prob=preds[i][idx][char_idx]
+                if prob>max_prob:
+                    max_prob=prob
+                    max_c=c
+            ans+=max_c
+            last_parsed+=1
+        print(f"ans is {ans}")
+        while(last_parsed+1<pos.shape[0]):
+            idx=pos[last_parsed+1]
+            max_prob=-1e9
+            max_d=""
+            for d in digits:
+                char_idx=char_map[d]
+                prob=preds[i][idx][char_idx]
+                if prob>max_prob:
+                    max_prob=prob
+                    max_d=d
+            ans+=max_d
+            last_parsed+=1
+        print(f"ans is {ans}")
+        final_ans.append(ans)
+    return final_ans
 class BaseRecLabelDecode(object):
     """Convert between text-label and text-index"""
 
@@ -231,14 +382,17 @@ class TritonPythonModel:
             wh_ratio_list=wh_ratio_list,
             max_wh_ratio=max_wh_ratio
         )
+        final_ans=KapiDecoder(output)
+        
         #print("Decoded results:", rec_result)
         # Apply alphanumeric filter (remove all non-alphanumeric characters including spaces)
+        print("final ans ",final_ans)
         print("rec results",rec_result)
         filtered_result = [re.sub(r'[^A-Za-z0-9]', '', rec[0]) for rec in rec_result]
 
         output_tensor = pb_utils.Tensor(
             "OUTPUT_TEXT",
-            np.array(filtered_result, dtype=object)
+            np.array(final_ans, dtype=object)
         )
 
         response = pb_utils.InferenceResponse(output_tensors=[output_tensor])
