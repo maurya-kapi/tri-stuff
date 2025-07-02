@@ -58,8 +58,8 @@ def KapiDecoder(preds):
             else:
                 #print("yes")
                 pos=np.append(pos,j)
-        # print("pos is")
-        # print(pos)
+        print("pos is")
+        print(pos)
         pos=pos.astype(np.uint8)
         # print(pos[0])
         # print(preds[0][int(pos[0])][32])
@@ -369,26 +369,26 @@ class TritonPythonModel:
         #print("Received request:", request)
         # Inputs
         output = pb_utils.get_input_tensor_by_name(request, "fetch_name_0").as_numpy()
-        wh_ratio_list = pb_utils.get_input_tensor_by_name(request, "wh_ratio_list").as_numpy()
-        sorted_indices = pb_utils.get_input_tensor_by_name(request, "sorted_indices").as_numpy()
-        max_wh_ratio = pb_utils.get_input_tensor_by_name(request, "max_wh_ratio").as_numpy()
+        # wh_ratio_list = pb_utils.get_input_tensor_by_name(request, "wh_ratio_list").as_numpy()
+        # sorted_indices = pb_utils.get_input_tensor_by_name(request, "sorted_indices").as_numpy()
+        # max_wh_ratio = pb_utils.get_input_tensor_by_name(request, "max_wh_ratio").as_numpy()
         #
         # print("Output shape:", output.shape)
         # rec_result = [1,2,3]
         # Run decoder
-        rec_result = self.decoder(
-            output,
-            return_word_box=False,
-            wh_ratio_list=wh_ratio_list,
-            max_wh_ratio=max_wh_ratio
-        )
+        # rec_result = self.decoder(
+        #     output,
+        #     return_word_box=False,
+        #     wh_ratio_list=wh_ratio_list,
+        #     max_wh_ratio=max_wh_ratio
+        # )
         final_ans=KapiDecoder(output)
         
         #print("Decoded results:", rec_result)
         # Apply alphanumeric filter (remove all non-alphanumeric characters including spaces)
         print("final ans ",final_ans)
-        print("rec results",rec_result)
-        filtered_result = [re.sub(r'[^A-Za-z0-9]', '', rec[0]) for rec in rec_result]
+        # print("rec results",rec_result)
+        # filtered_result = [re.sub(r'[^A-Za-z0-9]', '', rec[0]) for rec in rec_result]
 
         output_tensor = pb_utils.Tensor(
             "OUTPUT_TEXT",

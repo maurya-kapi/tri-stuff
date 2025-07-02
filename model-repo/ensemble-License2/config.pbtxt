@@ -67,18 +67,6 @@ ensemble_scheduling {
                 key:"x"
                 value:"x"
             }
-            output_map{
-                key:"wh_ratio_list"
-                value:"wh_ratio_list"
-            }
-            output_map{
-                key:"sorted_indices"
-                value:"sorted_indices"
-            }
-            output_map{
-                key:"max_wh_ratio"
-                value:"max_wh_ratio"
-            }
         },
         {
             model_name:"PaddleOCR"
@@ -98,18 +86,6 @@ ensemble_scheduling {
             input_map{
                 key:"fetch_name_0"
                 value:"fetch_name_0"
-            }
-            input_map{
-                key:"wh_ratio_list"
-                value:"wh_ratio_list"
-            }
-            input_map{
-                key:"sorted_indices"
-                value:"sorted_indices"
-            }
-            input_map{
-                key:"max_wh_ratio"
-                value:"max_wh_ratio"
             }
             output_map{
                 key:"OUTPUT_TEXT"

@@ -79,7 +79,7 @@ class TritonPythonModel:
         mask = class_scores > self.confidence_thres  
         print("LEngth where mask is 1 is ", mask.sum()) 
         # Apply class filter: only car (2) and bus (5)
-        allowed_class_ids = torch.tensor([2, 5], device=class_ids.device)
+        allowed_class_ids = torch.tensor([2,3,4,5], device=class_ids.device)
         class_id_mask = torch.isin(class_ids, allowed_class_ids)
         print("length of class_id_mask is", class_id_mask.sum())
          # Combine both masks
@@ -94,22 +94,38 @@ class TritonPythonModel:
             return np.array([]), np.array([]), np.array([])
     
         # Convert boxes from [cx, cy, w, h] → [x1, y1, x2, y2]
+        # boxes = output[:, :4].clone()
+        # x1 = boxes[:, 0] - boxes[:, 2] / 2  # x1
+        # y1 = boxes[:, 1] - boxes[:, 3] / 2  # y1
+        # x2 = boxes[:, 0] + boxes[:, 2]      # x2
+        # y2 = boxes[:, 1] + boxes[:, 3]      # y2
+        # x1 = x1.clamp(0, 640 - 1)
+        # y1 = y1.clamp(0, 640 - 1)
+        # x2 = x2.clamp(0, 640 - 1)
+        # y2 = y2.clamp(0, 640 - 1)
+ 
+        # # Apply NMS
+        # boxes = torch.stack([x1, y1, x2, y2], dim=1)
+        # keep = torchvision.ops.nms(boxes, class_scores,self.iou_thres)
+        # final_boxes = boxes[keep].detach().cpu().numpy().astype(int)
+        # final_scores = class_scores[keep].detach().cpu().numpy()
+        # final_class_ids = class_ids[keep].detach().cpu().numpy()  
         boxes = output[:, :4].clone()
         x1 = boxes[:, 0] - boxes[:, 2] / 2  # x1
         y1 = boxes[:, 1] - boxes[:, 3] / 2  # y1
-        x2 = boxes[:, 0] + boxes[:, 2]      # x2
-        y2 = boxes[:, 1] + boxes[:, 3]      # y2
+        x2 = boxes[:, 0] + boxes[:, 2] /2     # x2
+        y2 = boxes[:, 1] + boxes[:, 3] /2     # y2
         x1 = x1.clamp(0, 640 - 1)
         y1 = y1.clamp(0, 640 - 1)
         x2 = x2.clamp(0, 640 - 1)
         y2 = y2.clamp(0, 640 - 1)
- 
-        # Apply NMS
+
+       # Apply NMS
         boxes = torch.stack([x1, y1, x2, y2], dim=1)
         keep = torchvision.ops.nms(boxes, class_scores,self.iou_thres)
         final_boxes = boxes[keep].detach().cpu().numpy().astype(int)
         final_scores = class_scores[keep].detach().cpu().numpy()
-        final_class_ids = class_ids[keep].detach().cpu().numpy()  
+        final_class_ids = class_ids[keep].detach().cpu().numpy()
         print(final_boxes.shape, final_scores.shape, final_class_ids.shape)
         return [np.array(final_boxes), np.array(final_scores), np.array(final_class_ids)]
         # # Convert boxes from [cx, cy, w, h] → [x1, y1, x2, y2]
