@@ -12,7 +12,7 @@ class TritonPythonModel:
     that is created must have "TritonPythonModel" as the class name.
     """
     def initialize(self, args):
-      self.confidence_thres = 0.25
+      self.confidence_thres = 0.1
       self.iou_thres = 0.45
       
 

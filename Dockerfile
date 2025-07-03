@@ -18,6 +18,7 @@ RUN pip install tensorflow[and-cuda]
 RUN apt remove python3-blinker -y
 RUN pip install deepface tf-keras transformers
 RUN pip install paddleocr
+RUN pip install shapely pyclipper
 #RUN python3 -m pip install --upgrade pip --break-system-packages
 # RUN pip install paddleocr && \
 #     pip install -i https://pypi.org/simple paddlepaddle-gpu==3.0.0

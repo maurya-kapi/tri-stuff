@@ -1,0 +1,28 @@
+backend: "python"
+max_batch_size: 0
+
+input [
+  {
+    name: "fetch_name_0"
+    data_type: TYPE_FP32
+    dims: [-1,1, -1, -1]
+  },
+  {
+    name: "shape_info"
+    data_type: TYPE_FP32
+    dims: [-1,4]
+  }
+]
+
+output [
+    {
+       name: "Text_bboxes"
+       data_type: TYPE_FP32
+       dims: [-1,-1,4,2] 
+    },
+    {
+        name: "Counts"
+        data_type: TYPE_INT32
+        dims: [-1]
+    }
+]

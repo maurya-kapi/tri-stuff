@@ -51,6 +51,7 @@ def KapiDecoder(preds):
     for i in range(preds.shape[0]):
         preds_idx=np.argmax(preds[i],axis=1)
         print(preds_idx.shape)
+        tot_prob=0
         pos=np.array([])
         for j in range(preds_idx.shape[0]):
             if preds_idx[j]==0 or preds_idx[j]==96:
@@ -100,8 +101,10 @@ def KapiDecoder(preds):
         if(max_probs1>=max_probs2):
             ans+=s_1
             first_t=1
+            tot_prob=max_probs1
         else:
             ans+=s_2
+            tot_probs=max_probs2
         print(f"ans is {ans}")
         #now find the next 2 digits
         last_parsed=0
@@ -123,6 +126,7 @@ def KapiDecoder(preds):
                 if prob>max_prob:
                     max_prob=prob
                     max_d=d
+            tot_prob+=max_prob
             ans+=max_d
         print(f"ans is {ans}")
         last_parsed+=2
@@ -137,6 +141,7 @@ def KapiDecoder(preds):
                     max_prob=prob
                     max_c=c
             ans+=max_c
+            tot_prob+=max_prob
             last_parsed+=1
         print(f"ans is {ans}")
         while(last_parsed+1<pos.shape[0]):
@@ -149,9 +154,11 @@ def KapiDecoder(preds):
                 if prob>max_prob:
                     max_prob=prob
                     max_d=d
+            tot_prob+=max_prob
             ans+=max_d
             last_parsed+=1
         print(f"ans is {ans}")
+        print(f"the confidence is {tot_prob/len(ans)}")
         final_ans.append(ans)
     return final_ans
 class BaseRecLabelDecode(object):

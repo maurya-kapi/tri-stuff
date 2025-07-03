@@ -90,6 +90,7 @@ class TritonPythonModel:
         print(output)
         class_scores = class_scores[final_mask]
         class_ids = class_ids[final_mask]
+        print("class ids are : ",class_ids)
         if output.shape[0] == 0:
             return np.array([]), np.array([]), np.array([])
     
@@ -126,6 +127,7 @@ class TritonPythonModel:
         final_boxes = boxes[keep].detach().cpu().numpy().astype(int)
         final_scores = class_scores[keep].detach().cpu().numpy()
         final_class_ids = class_ids[keep].detach().cpu().numpy()
+        print("final class ids are : ",final_class_ids)
         print(final_boxes.shape, final_scores.shape, final_class_ids.shape)
         return [np.array(final_boxes), np.array(final_scores), np.array(final_class_ids)]
         # # Convert boxes from [cx, cy, w, h] → [x1, y1, x2, y2]
@@ -235,20 +237,24 @@ class TritonPythonModel:
             print(outputs)
             #outputs = outputs[0]
             outputs2 = self.postprocess(outputs)
+            #print(outputs2)
             num_detections = torch.tensor(len(outputs2[0])).type(torch.int32)
             detection_bboxes = torch.from_numpy(outputs2[0]).type(torch.int32)
             detection_scores = torch.from_numpy(outputs2[1]).type(torch.float32)
+            detection_class_ids=torch.from_numpy(outputs2[2]).type(torch.int32)
+            print("detection class ids are ",detection_class_ids)
             # detection_bboxes = outputs2[0].astype(np.float32)
             # detection_scores = outputs2[1].astype(np.float32)
             num_detections = pb_utils.Tensor.from_dlpack("num_detections", to_dlpack(num_detections))
             detection_bboxes = pb_utils.Tensor.from_dlpack("detection_bboxes", to_dlpack(detection_bboxes))
             detection_scores = pb_utils.Tensor.from_dlpack("detection_scores", to_dlpack(detection_scores))
-
+            detection_class_ids=pb_utils.Tensor.from_dlpack("detection_class_ids",to_dlpack(detection_class_ids))
             inference_response = pb_utils.InferenceResponse(
                 output_tensors=[
                     num_detections,
                     detection_bboxes,
-                    detection_scores])
+                    detection_scores,
+                    detection_class_ids])
 
             responses.append(inference_response)
         return responses

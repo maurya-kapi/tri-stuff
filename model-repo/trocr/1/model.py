@@ -14,13 +14,18 @@ class TritonPythonModel:
     #     #self.model = VisionEncoderDecoderModel.from_pretrained("microsoft/trocr-base-printed").to(self.device)
     #     self.model.eval()
     def initialize(self, args):
-        model_dir = os.path.join(os.path.dirname(__file__), "hf_model")
-        print("Resolved path to model:", model_dir)
-        print("Files inside model are :",os.listdir(model_dir))
-        print("Exists:", os.path.exists(os.path.join(model_dir, "preprocessor_config.json")))
-        self.processor = TrOCRProcessor.from_pretrained(model_dir)
-        self.model = VisionEncoderDecoderModel.from_pretrained(model_dir)
-        self.model.to("cuda")
+        # model_dir = os.path.join(os.path.dirname(__file__), "hf_model")
+        # print("Resolved path to model:", model_dir)
+        # print("Files inside model are :",os.listdir(model_dir))
+        # print("Exists:", os.path.exists(os.path.join(model_dir, "preprocessor_config.json")))
+        # self.processor = TrOCRProcessor.from_pretrained(model_dir)
+        # self.model = VisionEncoderDecoderModel.from_pretrained(model_dir)
+        # self.model.to("cuda")
+        self.device="cuda"
+        self.processor = TrOCRProcessor.from_pretrained("microsoft/trocr-base-printed")
+        self.model = VisionEncoderDecoderModel.from_pretrained("microsoft/trocr-base-printed")
+        self.model.to(self.device)
+        self.device="cuda"
     def filter_indian_number_plates(self,plates):
         # Regex for: 2 letters + 2 digits + 1-3 letters + 4 digits
         pattern = re.compile(r'^[A-Z]{2}\d{2}[A-Z]{1,3}\d{4}$')
@@ -43,24 +48,24 @@ class TritonPythonModel:
                 
                 # Convert to HWC
                 hwc_image = np.transpose(chw_image, (1, 2, 0))  # [H, W, 3]
-                # print(hwc_image)
+                print(hwc_image)
                 pil_image = Image.fromarray(hwc_image, mode="RGB")
                 image_array = np.array(pil_image)
-                # np.save("i1.npy", image_array)
-                # print(f"Processing image {i}")
-                # print("saving hwc image")
-                # np.save("p.npy", hwc_image)
-                # hwc_image = np.transpose(input_array[i], (1, 2, 0))  # shape: [H, W, 3], float32 in [0,1]
+                np.save("i1.npy", image_array)
+                print(f"Processing image {i}")
+                print("saving hwc image")
+                np.save("p.npy", hwc_image)
+                #hwc_image = np.transpose(input_array[i], (1, 2, 0))  # shape: [H, W, 3], float32 in [0,1]
                 pixel_values = self.processor(images=pil_image, return_tensors="pt").pixel_values.to(self.device)
-                # print(f"Pixel values shape: {pixel_values.shape}")
-                # print("saving pixel values")
-                # np.save("pixel_values.npy", pixel_values.cpu().numpy())
+                print(f"Pixel values shape: {pixel_values.shape}")
+                print("saving pixel values")
+                np.save("pixel_values.npy", pixel_values.cpu().numpy())
                 generated_ids = self.model.generate(pixel_values)
-                # print(f"Generated IDs for image {i}: {generated_ids}")
+                print(f"Generated IDs for image {i}: {generated_ids}")
                 decoded_text = self.processor.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
                 decoded_text = decoded_text.replace(" ", "")
-                
-                decoded_text = self.filter_indian_number_plates([decoded_text]) 
+                print(decoded_text)
+                #decoded_text = self.filter_indian_number_plates([decoded_text]) 
                 #print(f"Decoded text for image {i}: {decoded_text}")
                 if(len(decoded_text)>0):
                     decoded_text = decoded_text[0]
