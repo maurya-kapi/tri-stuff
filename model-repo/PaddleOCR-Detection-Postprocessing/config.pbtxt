@@ -3,7 +3,7 @@ max_batch_size: 0
 
 input [
   {
-    name: "fetch_name_0"
+    name: "fetch_name"
     data_type: TYPE_FP32
     dims: [-1,1, -1, -1]
   },
@@ -18,7 +18,7 @@ output [
     {
        name: "Text_bboxes"
        data_type: TYPE_FP32
-       dims: [-1,-1,4,2] 
+       dims: [-1,4,2] 
     },
     {
         name: "Counts"

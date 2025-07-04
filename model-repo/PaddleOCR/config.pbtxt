@@ -1,6 +1,6 @@
 name: "PaddleOCR"
 backend: "onnxruntime"
-max_batch_size: 10
+max_batch_size: 32
 input[
   {
     name: "x"

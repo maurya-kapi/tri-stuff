@@ -16,8 +16,8 @@ class DBPost:
     """
     def __init__(
         self,
-        thresh=0.3,
-        box_thresh=0.6,
+        thresh=0.2,
+        box_thresh=0.5,
         max_candidates=1000,
         unclip_ratio=2.0,
         use_dilation=False,
@@ -276,7 +276,7 @@ class TritonPythonModel:
     def execute(self, requests):
         request = requests[0]
 
-        input_map = pb_utils.get_input_tensor_by_name(request, "fetch_name_0").as_numpy()
+        input_map = pb_utils.get_input_tensor_by_name(request, "fetch_name").as_numpy()
         shape_info = pb_utils.get_input_tensor_by_name(request, "shape_info").as_numpy()
         batch_size = input_map.shape[0]
 
@@ -299,7 +299,7 @@ class TritonPythonModel:
 
         flat_output = np.concatenate(all_outputs, axis=0)  # shape (sum_N, 4, 2)
         lengths = np.array(lengths, dtype=np.int32)        # shape (batch_size,)
-
+        flat_output=flat_output.astype(np.float32)
         tensor_points = pb_utils.Tensor("Text_bboxes", flat_output)
         tensor_counts = pb_utils.Tensor("Counts", lengths)
 

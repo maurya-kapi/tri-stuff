@@ -1,11 +1,11 @@
 import onnx
 
 # Load model
-model = onnx.load("License-Detection/1/model.onnx")
+model = onnx.load("PaddleOCR-Detection/1/model.onnx")
 
 # Rename input
-old_input = "images"
-new_input = "input_image"
+old_input = "x"
+new_input = "inp"
 
 for input in model.graph.input:
     if input.name == old_input:
@@ -19,16 +19,16 @@ for init in model.graph.initializer:
         init.name = new_input
 
 # Rename output
-# old_output = "output0"
-# new_output = "output1"
+old_output = "fetch_name_0"
+new_output = "fetch_name"
 
-# for output in model.graph.output:
-#     if output.name == old_output:
-#         output.name = new_output
+for output in model.graph.output:
+    if output.name == old_output:
+        output.name = new_output
 
-# for node in model.graph.node:
-#     node.output[:] = [new_output if o == old_output else o for o in node.output]
+for node in model.graph.node:
+    node.output[:] = [new_output if o == old_output else o for o in node.output]
 
-# # Save new model
-# onnx.save(model, "renamed_io_model.onnx")
-# print("✅ Input and output renamed successfully.")
+# Save new model
+onnx.save(model, "renamed_io_model.onnx")
+print("✅ Input and output renamed successfully.")

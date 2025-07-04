@@ -239,7 +239,7 @@ class TritonPythonModel:
             outputs2 = self.postprocess(outputs)
             #print(outputs2)
             num_detections = torch.tensor(len(outputs2[0])).type(torch.int32)
-            detection_bboxes = torch.from_numpy(outputs2[0]).type(torch.int32)
+            detection_bboxes = torch.from_numpy(outputs2[0]).type(torch.float32)
             detection_scores = torch.from_numpy(outputs2[1]).type(torch.float32)
             detection_class_ids=torch.from_numpy(outputs2[2]).type(torch.int32)
             print("detection class ids are ",detection_class_ids)
