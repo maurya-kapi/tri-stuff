@@ -6,6 +6,11 @@ input [
         name: "fetch_name_0"
         data_type: TYPE_FP32
         dims: [-1,-1,97]
+    },
+    {
+        name: "mapped_boxes"
+        data_type: TYPE_FP32
+        dims: [-1,4]
     }
     #{
         #name: "wh_ratio_list"
@@ -29,6 +34,11 @@ output [
     name: "OUTPUT_TEXT"
     data_type: TYPE_STRING
     dims: [ -1 ]
+  },
+  {
+    name: "mapped_det_bboxes"
+    data_type: TYPE_FP32
+    dims: [-1,4]
   }
 ]
 

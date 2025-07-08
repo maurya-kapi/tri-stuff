@@ -32,6 +32,16 @@ class TritonPythonModel:
         valid_plates = [plate for plate in plates if pattern.match(plate)]
         valid_plates=plates
         return valid_plates
+    def is_valid_indian_number_plate(self,plate):
+        """
+        Checks if a plate follows Indian number plate format:
+        - Two-letter state code
+        - Two-digit RTO code
+        - 1-3 letters
+        - 1-4 digits (may include leading zeros)
+        """
+        pattern = re.compile(r'^[A-Z]{2}\d{2}[A-Z]{1,3}\d{1,4}$')
+        return bool(pattern.match(plate))
     def execute(self, requests):
         responses = []
 
@@ -40,7 +50,9 @@ class TritonPythonModel:
             input_array = input_tensor.as_numpy()  # shape: [B, 3, H, W] FP32
 
             batch_texts = []
-
+            bbox_array = pb_utils.get_input_tensor_by_name(request, "mapped_boxes").as_numpy()
+            # print(bbox_array)
+            final_boxes=[]
             for i in range(input_array.shape[0]):
                 # Extract one image, convert to uint8 for PIL
                 chw_image = input_array[i]  # [3, H, W]
@@ -48,27 +60,28 @@ class TritonPythonModel:
                 
                 # Convert to HWC
                 hwc_image = np.transpose(chw_image, (1, 2, 0))  # [H, W, 3]
-                print(hwc_image)
+                # print(hwc_image)
                 pil_image = Image.fromarray(hwc_image, mode="RGB")
-                image_array = np.array(pil_image)
-                np.save("i1.npy", image_array)
-                print(f"Processing image {i}")
-                print("saving hwc image")
-                np.save("p.npy", hwc_image)
+                # image_array = np.array(pil_image)
+                # np.save("i1.npy", image_array)
+                # print(f"Processing image {i}")
+                # print("saving hwc image")
+                # np.save("p.npy", hwc_image)
                 #hwc_image = np.transpose(input_array[i], (1, 2, 0))  # shape: [H, W, 3], float32 in [0,1]
                 pixel_values = self.processor(images=pil_image, return_tensors="pt").pixel_values.to(self.device)
-                print(f"Pixel values shape: {pixel_values.shape}")
-                print("saving pixel values")
-                np.save("pixel_values.npy", pixel_values.cpu().numpy())
+                # print(f"Pixel values shape: {pixel_values.shape}")
+                # print("saving pixel values")
+                # np.save("pixel_values.npy", pixel_values.cpu().numpy())
                 generated_ids = self.model.generate(pixel_values)
-                print(f"Generated IDs for image {i}: {generated_ids}")
+                # print(f"Generated IDs for image {i}: {generated_ids}")
                 decoded_text = self.processor.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
                 decoded_text = decoded_text.replace(" ", "")
+                # final_text=[]
                 print(decoded_text)
-                #decoded_text = self.filter_indian_number_plates([decoded_text]) 
-                #print(f"Decoded text for image {i}: {decoded_text}")
-                if(len(decoded_text)>0):
-                    decoded_text = decoded_text[0]
+                if(self.is_valid_indian_number_plate(decoded_text)):
+                    final_boxes.append(bbox_array[i])
+                    # print("decoded encode ")
+                    # print(decoded_text.encode("utf-8"))
                     batch_texts.append(decoded_text.encode("utf-8"))
                 else:
                     decoded_text = ""
@@ -76,8 +89,13 @@ class TritonPythonModel:
                 # batch_texts.append(decoded_text.encode("utf-8"))
             #batch_texts = self.filter_indian_number_plates(batch_texts)
             # Output tensor: shape [B], dtype object (bytes)
+            bbox_array=np.array(final_boxes,dtype=np.float32)
+            # print("mapped det bboxes are: ",bbox_array)
+            bbox_tensor = pb_utils.Tensor("mapped_det_bboxes", bbox_array)
+            # print("batch texts are ")
+            # print(batch_texts)
             output_tensor = pb_utils.Tensor("OUTPUT_TEXT", np.array(batch_texts, dtype=object))
-            inference_response = pb_utils.InferenceResponse(output_tensors=[output_tensor])
+            inference_response = pb_utils.InferenceResponse(output_tensors=[output_tensor,bbox_tensor])
             responses.append(inference_response)
 
         return responses

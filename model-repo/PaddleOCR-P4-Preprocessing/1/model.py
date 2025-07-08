@@ -16,42 +16,89 @@ class TritonPythonModel:
         img = img.squeeze(0)
         return img
 
+    # def execute(self, requests):
+    #     responses = []
+    #     for request in requests:
+    #         # Get cropped images directly from previous module
+    #         crops_np = pb_utils.get_input_tensor_by_name(request, "cropped_images").as_numpy()  # shape (N,3,H,W)
+    #         crops_torch = torch.from_numpy(crops_np).float().to(self.device)
+
+    #         norm_images = []
+    #         width_list = []
+
+    #         for i in range(crops_torch.shape[0]):
+    #             crop = crops_torch[i] * 255.0  # scale to 0-255
+    #             crop = crop.clamp(0,255)
+
+    #             # convert to grayscale but keep 3 channels
+    #             gray_crop = crop.mean(0, keepdim=True).repeat(3,1,1)
+    #             width_list.append(gray_crop.shape[2] / float(gray_crop.shape[1]))
+
+    #             norm_img = self.resize_norm_img(gray_crop, (self.imgC, self.imgH, self.imgW)) / 255.0
+    #             norm_images.append(norm_img.unsqueeze(0))
+
+    #         # Sort by width/h ratio as you did
+    #         indices = np.argsort(np.array(width_list))
+
+    #         # Build final batch
+    #         if len(norm_images) == 0:
+    #             norm_img_batch = torch.zeros((1,self.imgC,self.imgH,self.imgW), device=self.device)
+    #         else:
+    #             norm_img_batch = torch.cat([norm_images[i] for i in indices], dim=0)
+
+    #         # Move to numpy for Triton output
+    #         norm_img_batch_np = norm_img_batch.cpu().numpy().astype(np.float32)
+    #         output_tensor = pb_utils.Tensor("x", norm_img_batch_np)
+
+    #         responses.append(pb_utils.InferenceResponse(
+    #             output_tensors=[output_tensor]
+    #         ))
+
+    #     return responses
     def execute(self, requests):
         responses = []
         for request in requests:
             # Get cropped images directly from previous module
             crops_np = pb_utils.get_input_tensor_by_name(request, "cropped_images").as_numpy()  # shape (N,3,H,W)
+            bboxes = pb_utils.get_input_tensor_by_name(request, "bboxes").as_numpy()  # shape (N,4)
+
             crops_torch = torch.from_numpy(crops_np).float().to(self.device)
 
-            norm_images = []
-            width_list = []
-
+            crops_with_data = []
             for i in range(crops_torch.shape[0]):
                 crop = crops_torch[i] * 255.0  # scale to 0-255
                 crop = crop.clamp(0,255)
 
                 # convert to grayscale but keep 3 channels
                 gray_crop = crop.mean(0, keepdim=True).repeat(3,1,1)
-                width_list.append(gray_crop.shape[2] / float(gray_crop.shape[1]))
+                width_ratio = gray_crop.shape[2] / float(gray_crop.shape[1])
 
-                norm_img = self.resize_norm_img(gray_crop, (self.imgC, self.imgH, self.imgW)) / 255.0
+                crops_with_data.append((gray_crop, width_ratio, bboxes[i]))
+
+            # Sort by width ratio
+            sorted_crops = sorted(crops_with_data, key=lambda x: x[1])
+
+            norm_images = []
+            mapped_boxes = []
+            for crop, _, box in sorted_crops:
+                norm_img = self.resize_norm_img(crop, (self.imgC, self.imgH, self.imgW)) / 255.0
                 norm_images.append(norm_img.unsqueeze(0))
+                mapped_boxes.append(box)
 
-            # Sort by width/h ratio as you did
-            indices = np.argsort(np.array(width_list))
-
-            # Build final batch
             if len(norm_images) == 0:
                 norm_img_batch = torch.zeros((1,self.imgC,self.imgH,self.imgW), device=self.device)
+                mapped_boxes_np = np.zeros((1,4), dtype=np.float32)
             else:
-                norm_img_batch = torch.cat([norm_images[i] for i in indices], dim=0)
+                norm_img_batch = torch.cat(norm_images, dim=0)
+                mapped_boxes_np = np.stack(mapped_boxes).astype(np.float32)
 
-            # Move to numpy for Triton output
+            # Prepare outputs
             norm_img_batch_np = norm_img_batch.cpu().numpy().astype(np.float32)
             output_tensor = pb_utils.Tensor("x", norm_img_batch_np)
+            boxes_tensor = pb_utils.Tensor("mapped_boxes", mapped_boxes_np)
 
             responses.append(pb_utils.InferenceResponse(
-                output_tensors=[output_tensor]
+                output_tensors=[output_tensor, boxes_tensor]
             ))
 
         return responses

@@ -122,6 +122,71 @@ class TritonPythonModel:
         img = img.squeeze(0)
         return img
 
+    # def execute(self, requests):
+    #     responses = []
+    #     for request in requests:
+    #         image_np = pb_utils.get_input_tensor_by_name(request, "image").as_numpy()  # [1,3,H,W]
+    #         bboxes = pb_utils.get_input_tensor_by_name(request, "det_bboxes").as_numpy()  # [N,4]
+            
+    #         image_np = image_np[0]
+    #         image_torch = torch.from_numpy(image_np).to(self.device)  # [3,H,W], float32
+    #         image_torch = image_torch * 255.0  # scale back
+    #         image_torch = image_torch.clamp(0,255)
+
+    #         crops = []
+    #         width_list = []
+            
+    #         scale_x = self.orig_w / self.input_w
+    #         scale_y = self.orig_h / self.input_h
+
+    #         for box in bboxes:
+    #             x1, y1, x2, y2 = box.astype(np.float32)
+    #             x1_o = int(np.clip(x1 * scale_x, 0, self.orig_w - 1))
+    #             y1_o = int(np.clip(y1 * scale_y, 0, self.orig_h - 1))
+    #             x2_o = int(np.clip(x2 * scale_x, 0, self.orig_w - 1))
+    #             y2_o = int(np.clip(y2 * scale_y, 0, self.orig_h - 1))
+
+    #             if x2_o <= x1_o or y2_o <= y1_o:
+    #                 continue
+
+    #             crop = image_torch[:, y1_o:y2_o, x1_o:x2_o]  # still on GPU
+    #             # grayscale by averaging channels
+    #             gray_crop = crop.mean(0, keepdim=True).repeat(3,1,1)
+                
+    #             crops.append(gray_crop)
+    #             width_list.append(gray_crop.shape[2] / float(gray_crop.shape[1]))
+            
+    #         indices = np.argsort(np.array(width_list))
+    #         norm_images = []
+    #         # wh_ratio_list = []
+    #         # max_wh_ratio = 0
+
+    #         for i in range(len(indices)):
+    #             crop = crops[indices[i]]
+    #             h, w = crop.shape[1:]
+    #             # wh_ratio = w * 1.0 / h
+    #             # wh_ratio_list.append(wh_ratio)
+    #             # max_wh_ratio = max(max_wh_ratio, wh_ratio)
+    #             norm_img = self.resize_norm_img(crop, (self.imgC, self.imgH, self.imgW)) / 255.0
+    #             norm_images.append(norm_img.unsqueeze(0))
+            
+    #         if len(norm_images) == 0:
+    #             norm_img_batch = torch.zeros((1,self.imgC,self.imgH,self.imgW), device=self.device)
+    #         else:
+    #             norm_img_batch = torch.cat(norm_images, dim=0)
+
+    #         # move to CPU numpy for Triton output
+    #         norm_img_batch_np = norm_img_batch.cpu().numpy().astype(np.float32)
+    #         output_tensor = pb_utils.Tensor("x", norm_img_batch_np)
+    #         # wh_tensor = pb_utils.Tensor("wh_ratio_list", np.array(wh_ratio_list, dtype=np.float32))
+    #         # idx_tensor = pb_utils.Tensor("sorted_indices", np.array(indices, dtype=np.int32))
+    #         # max_wh_tensor = pb_utils.Tensor("max_wh_ratio", np.array([max_wh_ratio], dtype=np.float32))
+            
+    #         responses.append(pb_utils.InferenceResponse(
+    #             output_tensors=[output_tensor]
+    #         ))
+
+    #     return responses
     def execute(self, requests):
         responses = []
         for request in requests:
@@ -133,57 +198,53 @@ class TritonPythonModel:
             image_torch = image_torch * 255.0  # scale back
             image_torch = image_torch.clamp(0,255)
 
-            crops = []
-            width_list = []
-            
             scale_x = self.orig_w / self.input_w
             scale_y = self.orig_h / self.input_h
 
-            for box in bboxes:
+            crops_with_idx = []
+            mapped_crops=[]
+            for idx, box in enumerate(bboxes):
                 x1, y1, x2, y2 = box.astype(np.float32)
                 x1_o = int(np.clip(x1 * scale_x, 0, self.orig_w - 1))
                 y1_o = int(np.clip(y1 * scale_y, 0, self.orig_h - 1))
                 x2_o = int(np.clip(x2 * scale_x, 0, self.orig_w - 1))
                 y2_o = int(np.clip(y2 * scale_y, 0, self.orig_h - 1))
-
+                mapped_crops.append([x1_o,y1_o,x2_o,y2_o])
                 if x2_o <= x1_o or y2_o <= y1_o:
                     continue
 
                 crop = image_torch[:, y1_o:y2_o, x1_o:x2_o]  # still on GPU
-                # grayscale by averaging channels
                 gray_crop = crop.mean(0, keepdim=True).repeat(3,1,1)
-                
-                crops.append(gray_crop)
-                width_list.append(gray_crop.shape[2] / float(gray_crop.shape[1]))
-            
-            indices = np.argsort(np.array(width_list))
-            norm_images = []
-            # wh_ratio_list = []
-            # max_wh_ratio = 0
+                width_ratio = gray_crop.shape[2] / float(gray_crop.shape[1])
+                # print(gray_crop)
+                crops_with_idx.append((idx, gray_crop, width_ratio))
 
-            for i in range(len(indices)):
-                crop = crops[indices[i]]
-                h, w = crop.shape[1:]
-                # wh_ratio = w * 1.0 / h
-                # wh_ratio_list.append(wh_ratio)
-                # max_wh_ratio = max(max_wh_ratio, wh_ratio)
+            # Sort by width_ratio
+            sorted_crops = sorted(crops_with_idx, key=lambda x: x[2])
+
+            norm_images = []
+            mapped_coords = []
+            for original_idx, crop, _ in sorted_crops:
                 norm_img = self.resize_norm_img(crop, (self.imgC, self.imgH, self.imgW)) / 255.0
                 norm_images.append(norm_img.unsqueeze(0))
-            
+                print(mapped_crops[original_idx])
+                mapped_coords.append(mapped_crops[original_idx])
+
             if len(norm_images) == 0:
                 norm_img_batch = torch.zeros((1,self.imgC,self.imgH,self.imgW), device=self.device)
+                mapped_coords_np = np.zeros((1,4), dtype=np.float32)
             else:
                 norm_img_batch = torch.cat(norm_images, dim=0)
+                mapped_coords_np = np.array(mapped_coords, dtype=np.float32)
 
-            # move to CPU numpy for Triton output
+            # Prepare outputs
             norm_img_batch_np = norm_img_batch.cpu().numpy().astype(np.float32)
             output_tensor = pb_utils.Tensor("x", norm_img_batch_np)
-            # wh_tensor = pb_utils.Tensor("wh_ratio_list", np.array(wh_ratio_list, dtype=np.float32))
-            # idx_tensor = pb_utils.Tensor("sorted_indices", np.array(indices, dtype=np.int32))
-            # max_wh_tensor = pb_utils.Tensor("max_wh_ratio", np.array([max_wh_ratio], dtype=np.float32))
-            
+            coords_tensor = pb_utils.Tensor("mapped_boxes", mapped_coords_np)
+
             responses.append(pb_utils.InferenceResponse(
-                output_tensors=[output_tensor]
+                output_tensors=[output_tensor, coords_tensor]
             ))
 
         return responses
+

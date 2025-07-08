@@ -35,8 +35,8 @@ char_map = {
     "'": 86, '(': 87, ')': 88, '*': 89, '+': 90,
     ',': 91, '-': 92, '.': 93, '/': 94, ' ':96
 }
-def KapiDecoder(preds):
-    print(preds.shape)
+def KapiDecoder(preds,bboxes):
+    # print(preds.shape)
     # preds_idx = np.argmax(preds, axis=2)
     # print(preds_idx.shape)
     # pos=[]
@@ -48,9 +48,10 @@ def KapiDecoder(preds):
     #         pos.append(i)
     # print(pos)
     final_ans=[]
+    final_bboxes=[]
     for i in range(preds.shape[0]):
         preds_idx=np.argmax(preds[i],axis=1)
-        print(preds_idx.shape)
+        # print(preds_idx.shape)
         tot_prob=0
         pos=np.array([])
         for j in range(preds_idx.shape[0]):
@@ -59,12 +60,14 @@ def KapiDecoder(preds):
             else:
                 #print("yes")
                 pos=np.append(pos,j)
-        print("pos is")
-        print(pos)
+        # print("pos is")
+        # print(pos)
         pos=pos.astype(np.uint8)
         # print(pos[0])
         # print(preds[0][int(pos[0])][32])
         if(pos.shape[0]<9 or pos.shape[0]>12):
+            print(pos.shape[0])
+            print("invalid number of chars")
             continue
         ans=""
         max_probs1=-1e9
@@ -72,7 +75,7 @@ def KapiDecoder(preds):
         s_1=""
         s_2=""
         
-        # calculating the probavility of possible state codes in first and second index
+        # calculating the probability of possible state codes in first and second index
         for s in states:
             first=s[0]
             first=char_map[s[0]]
@@ -158,9 +161,10 @@ def KapiDecoder(preds):
             ans+=max_d
             last_parsed+=1
         print(f"ans is {ans}")
-        print(f"the confidence is {tot_prob/len(ans)}")
+        # print(f"the confidence is {tot_prob/len(ans)}")
         final_ans.append(ans)
-    return final_ans
+        final_bboxes.append(bboxes[i])
+    return (final_ans,final_bboxes)
 class BaseRecLabelDecode(object):
     """Convert between text-label and text-index"""
 
@@ -376,6 +380,7 @@ class TritonPythonModel:
         #print("Received request:", request)
         # Inputs
         output = pb_utils.get_input_tensor_by_name(request, "fetch_name_0").as_numpy()
+        bboxes=pb_utils.get_input_tensor_by_name(request, "mapped_boxes").as_numpy()
         # wh_ratio_list = pb_utils.get_input_tensor_by_name(request, "wh_ratio_list").as_numpy()
         # sorted_indices = pb_utils.get_input_tensor_by_name(request, "sorted_indices").as_numpy()
         # max_wh_ratio = pb_utils.get_input_tensor_by_name(request, "max_wh_ratio").as_numpy()
@@ -389,7 +394,7 @@ class TritonPythonModel:
         #     wh_ratio_list=wh_ratio_list,
         #     max_wh_ratio=max_wh_ratio
         # )
-        final_ans=KapiDecoder(output)
+        final_ans,bboxes=KapiDecoder(output,bboxes)
         
         #print("Decoded results:", rec_result)
         # Apply alphanumeric filter (remove all non-alphanumeric characters including spaces)
@@ -401,6 +406,6 @@ class TritonPythonModel:
             "OUTPUT_TEXT",
             np.array(final_ans, dtype=object)
         )
-
-        response = pb_utils.InferenceResponse(output_tensors=[output_tensor])
+        bboxes_tensor=pb_utils.Tensor("mapped_det_bboxes",np.array(bboxes,dtype=np.float32))
+        response = pb_utils.InferenceResponse(output_tensors=[output_tensor,bboxes_tensor])
         return [response]

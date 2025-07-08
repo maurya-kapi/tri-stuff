@@ -12,8 +12,8 @@ class TritonPythonModel:
     that is created must have "TritonPythonModel" as the class name.
     """
     def initialize(self, args):
-      self.confidence_thres = 0.25
-      self.iou_thres = 0.7
+      self.confidence_thres = 0.35
+      self.iou_thres = 0.5
       
 
 
@@ -58,41 +58,41 @@ class TritonPythonModel:
     
         # Convert to torch and move to GPU
         #output = torch.from_numpy(output).to(device)  # [N, 4 + num_classes]
-        print("output earlier shape", output.shape)
+        # print("output earlier shape", output.shape)
         output=output.to(device)  # [N, 4 + num_classes]
         output = output.squeeze()
-        print("output shape after squeeze ", output.shape)
+        # print("output shape after squeeze ", output.shape)
         output = output.transpose(1,0)
-        print("output shape after transpose ", output.shape) 
-        print(output)
-        print("output shape ", output.shape)
+        # print("output shape after transpose ", output.shape) 
+        # print(output)
+        # print("output shape ", output.shape)
         # Get class scores and corresponding predicted class
         class_scores, class_ids = torch.max(output[:, 4:], dim=1)   
-        print(class_ids)
+        # print(class_ids)
         #now i will calculate where class_ids is 2 to 5
         ans=0
         for i in range(len(class_ids)):
             if class_ids[i] >= 2 and class_ids[i] <= 5:
                 ans+=1
-        print("ans is ", ans)
+        # print("ans is ", ans)
         # Filter by confidence threshold
         mask = class_scores > self.confidence_thres  
-        print("LEngth where mask is 1 is ", mask.sum()) 
+        # print("LEngth where mask is 1 is ", mask.sum()) 
         # Apply class filter: only car (2) and bus (5)
         allowed_class_ids = torch.tensor([2,3,4,5], device=class_ids.device)
         class_id_mask = torch.isin(class_ids, allowed_class_ids)
-        print("length of class_id_mask is", class_id_mask.sum())
+        # print("length of class_id_mask is", class_id_mask.sum())
          # Combine both masks
         final_mask = mask & class_id_mask
         output = output[final_mask]
-        print("final mask shape is")
-        print(output.shape)
-        print(output)
+        # print("final mask shape is")
+        # print(output.shape)
+        # print(output)
         class_scores = class_scores[final_mask]
         class_ids = class_ids[final_mask]
-        print("class ids are : ",class_ids)
+        # print("class ids are : ",class_ids)
         if output.shape[0] == 0:
-            return np.array([]), np.array([]), np.array([])
+            return np.zeros((1,4)), np.zeros((1)), np.zeros((1))
     
         # Convert boxes from [cx, cy, w, h] → [x1, y1, x2, y2]
         # boxes = output[:, :4].clone()
@@ -125,6 +125,13 @@ class TritonPythonModel:
         boxes = torch.stack([x1, y1, x2, y2], dim=1)
         keep = torchvision.ops.nms(boxes, class_scores,self.iou_thres)
         final_boxes = boxes[keep].detach().cpu().numpy().astype(int)
+        # for box in final_boxes:
+        #     w=box[2]-box[0]
+        #     h=box[3]-box[1]
+        #     box[0]=box[0]+0.1*w
+        #     box[1]=box[1]+0.1*h
+        #     box[2]=box[2]-0.1*w
+        #     box[3]=box[3]-0.1*h
         final_scores = class_scores[keep].detach().cpu().numpy()
         final_class_ids = class_ids[keep].detach().cpu().numpy()
         print("final class ids are : ",final_class_ids)

@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 import triton_python_backend_utils as pb_utils
-
+import numpy as np
 class TritonPythonModel:
     def initialize(self, args):
         # Target original image dimensions
@@ -70,9 +70,10 @@ class TritonPythonModel:
                     padded_crops.append(padded)
 
                 output = torch.stack(padded_crops, dim=0) # [N,3,max_h,max_w]
-
+            mapped_bboxes_np = bboxes.cpu().numpy().astype(np.int32)
+            mapped_bboxes_tensor=pb_utils.Tensor("mapped_boxes",mapped_bboxes_np)
             output_np = output.cpu().numpy()
             out_tensor = pb_utils.Tensor("cropped_vehicles", output_np)
-            responses.append(pb_utils.InferenceResponse(output_tensors=[out_tensor]))
+            responses.append(pb_utils.InferenceResponse(output_tensors=[out_tensor,mapped_bboxes_tensor]))
 
         return responses

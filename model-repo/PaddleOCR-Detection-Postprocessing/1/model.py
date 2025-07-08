@@ -56,12 +56,12 @@ class DBPost:
             contours, _ = outs[0], outs[1]
 
         num_contours = min(len(contours), self.max_candidates)
-        print(num_contours)
+        # print(num_contours)
         boxes = []
         scores = []
         for index in range(num_contours):
             contour = contours[index]
-            print(contour)
+            # print(contour)
             points, sside = self.get_mini_boxes(contour)
             if sside < self.min_size:
                 continue
@@ -140,16 +140,16 @@ class DBPost:
         return cv2.mean(bitmap[ymin : ymax + 1, xmin : xmax + 1], mask)[0]
     def __call__(self, outs_dict, shape_list):
         pred = outs_dict["maps"]
-        print("shape list is:")
-        print(shape_list)
+        # print("shape list is:")
+        # print(shape_list)
         # if isinstance(pred, paddle.Tensor):
         #     pred = pred.numpy()
         pred = pred[:, 0, :, :]
-        print(np.min(pred))
-        print(np.max(pred))
-        print(np.sum(pred))
+        # print(np.min(pred))
+        # print(np.max(pred))
+        # print(np.sum(pred))
         segmentation = pred > self.thresh
-        print(pred)
+        # print(pred)
         boxes_batch = []
         for batch_index in range(pred.shape[0]):
             src_h, src_w, ratio_h, ratio_w = shape_list[batch_index]
@@ -286,11 +286,11 @@ class TritonPythonModel:
 
         all_outputs = []
         lengths = []
-        print(outputs)
+        # print(outputs)
         for output in outputs:
             points = output["points"]  # shape (N_i, 4, 2)
-            print(points)
-            print(points.shape)
+            # print(points)
+            # print(points.shape)
             if points.size == 0:
                 # Fix empty detections to have shape (0, 4, 2)
                 points = np.empty((0, 4, 2), dtype=np.float32)

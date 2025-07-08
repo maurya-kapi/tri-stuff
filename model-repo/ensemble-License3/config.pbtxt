@@ -1,3 +1,4 @@
+#text proto 
 platform: "ensemble"
 max_batch_size: 0
 input [
@@ -34,31 +35,31 @@ ensemble_scheduling {
             }
         },
         {
-            model_name: "License-Detection"
+            model_name: "Car-Detection"
             model_version: 1
             input_map {
-                key: "input_image"
+                key: "images"
                 value: "input_image"
             }
             output_map {
-                key: "output1"
-                value: "output1"
+                key: "output0"
+                value: "output0"
             }
         },
         {
-            model_name: "License-Detection-Postprocessing"
+            model_name: "Car-Detection-postprocessing"
             model_version: 1
             input_map{
-                key: "output1"
-                value: "output1"
+                key: "output0"
+                value: "output0"
             }
             output_map{
-                key: "det_bboxes"
-                value: "det_bboxes"
+                key: "detection_bboxes"
+                value: "detection_bboxes"
             }
         },
         {
-            model_name: "Trocr-Pre"
+            model_name: "Trocr-Car-Pre"
             model_version: 1
             input_map{
                 key:"image"
@@ -66,11 +67,11 @@ ensemble_scheduling {
             }
             input_map{
                 key:"det_bboxes"
-                value:"det_bboxes"
+                value:"detection_bboxes"
             }
             output_map{
-                key:"cropped_plates"
-                value:"cropped_plates"
+                key:"cropped_vehicles"
+                value:"cropped_vehicles"
             }
             output_map{
                 key: "mapped_boxes"
@@ -81,21 +82,21 @@ ensemble_scheduling {
             model_name: "trocr"
             model_version: 1
             input_map{
-                key:"INPUT_IMAGE"
-                value:"cropped_plates"
+                key: "INPUT_IMAGE"
+                value: "cropped_vehicles"
             }
             input_map{
                 key: "mapped_boxes"
                 value: "mapped_boxes"
             }
             output_map{
-                key:"OUTPUT_TEXT"
-                value:"OUTPUT_TEXT"
+                key: "OUTPUT_TEXT"
+                value: "OUTPUT_TEXT"
             }
             output_map{
                 key: "mapped_det_bboxes"
                 value: "mapped_det_bboxes"
             }
-        }         
+        }     
     ]
 }

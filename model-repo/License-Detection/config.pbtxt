@@ -1,6 +1,7 @@
 name: "License-Detection"
-platform: "tensorrt_plan"
-backend: "tensorrt"
+# platform: "tensorrt_plan"
+# backend: "tensorrt"
+# platform: "auto"
 max_batch_size: 10
 input [
   {

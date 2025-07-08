@@ -13,6 +13,11 @@ output [
     name: "OUTPUT_TEXT"
     data_type: TYPE_STRING
     dims: [ -1 ]
+  },
+  {
+    name: "mapped_det_bboxes"
+    data_type: TYPE_FP32
+    dims: [-1,4]
   }
 ]
 ensemble_scheduling {
@@ -140,9 +145,17 @@ ensemble_scheduling {
                 key: "cropped_vehicles"
                 value: "cropped_vehicles"
             }
+            input_map{
+                key: "vehicle_boxes"
+                value: "detection_bboxes"
+            }
             output_map{
                 key: "cropped_images"
                 value: "cropped_images"
+            }
+            output_map{
+                key: "bboxes"
+                value: "bboxes"
             }
         },
         {
@@ -152,9 +165,17 @@ ensemble_scheduling {
                 key: "cropped_images"
                 value: "cropped_images"
             }
+            input_map{
+                key: "bboxes"
+                value: "bboxes"
+            }
             output_map{
                 key: "x"
                 value: "x"
+            }
+            output_map{
+                key: "mapped_boxes"
+                value: "mapped_boxes"
             }
         },
         {
@@ -176,9 +197,17 @@ ensemble_scheduling {
                 key:"fetch_name_0"
                 value:"fetch_name_0"
             }
+            input_map{
+                key: "mapped_boxes"
+                value: "mapped_boxes"
+            }
             output_map{
                 key:"OUTPUT_TEXT"
                 value:"OUTPUT_TEXT"
+            }
+            output_map{
+                key: "mapped_det_bboxes"
+                value: "mapped_det_bboxes"
             }
         }         
     ]

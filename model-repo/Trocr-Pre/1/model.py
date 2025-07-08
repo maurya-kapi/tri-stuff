@@ -25,7 +25,7 @@ class TritonPythonModel:
             image_hwc = (image_hwc * 255.0).clip(0, 255).astype(np.uint8)
 
             crops = []
-
+            mapped_crops=[]
             for box in bboxes:
                 x1, y1, x2, y2 = box.astype(np.float32)
 
@@ -37,7 +37,7 @@ class TritonPythonModel:
                 y1_o = int(np.clip(y1 * scale_y, 0, self.orig_h - 1))
                 x2_o = int(np.clip(x2 * scale_x, 0, self.orig_w - 1))
                 y2_o = int(np.clip(y2 * scale_y, 0, self.orig_h - 1))
-
+                mapped_crops.append([x1_o,y1_o,x2_o,y2_o])
                 if x2_o <= x1_o or y2_o <= y1_o:
                     continue
 
@@ -52,8 +52,13 @@ class TritonPythonModel:
                 output = np.stack(crops, axis=0).astype(np.float32)
             else:
                 output = np.zeros((0, 3, self.target_h, self.target_w), dtype=np.float32)
+                mapped_crops=np.zeros((1,4))
 
             out_tensor = pb_utils.Tensor("cropped_plates", output)
-            responses.append(pb_utils.InferenceResponse(output_tensors=[out_tensor]))
+            mapped_crops=np.array(mapped_crops,dtype=np.int32)
+            # print("mapped_crops is ")
+            # print(mapped_crops)
+            mapped_crops_tensor=pb_utils.Tensor("mapped_boxes",mapped_crops)
+            responses.append(pb_utils.InferenceResponse(output_tensors=[out_tensor,mapped_crops_tensor]))
 
         return responses

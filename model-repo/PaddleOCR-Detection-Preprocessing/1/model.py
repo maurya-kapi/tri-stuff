@@ -193,8 +193,14 @@ class TritonPythonModel:
             processed_shapes.append(shape_info_np)
 
         # Stack into batched outputs
-        batched_imgs = np.stack(processed_imgs, axis=0)         # shape (batch_size, ...)
-        batched_shapes = np.stack(processed_shapes, axis=0)     # shape (batch_size, ...)
+        if len(processed_imgs)==0:
+            batched_imgs=np.zeros((1,3,32,32))
+            batched_imgs=batched_imgs.astype(np.float32)
+            batched_shapes=np.zeros((1,4))
+            batched_shapes=batched_shapes.astype(np.float32)
+        else:
+            batched_imgs = np.stack(processed_imgs, axis=0)         # shape (batch_size, ...)
+            batched_shapes = np.stack(processed_shapes, axis=0)     # shape (batch_size, ...)
 
         # Create output tensors
         out_tensor_x = pb_utils.Tensor("inp", batched_imgs)

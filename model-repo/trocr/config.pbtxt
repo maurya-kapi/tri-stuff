@@ -7,6 +7,11 @@ input [
     name: "INPUT_IMAGE"
     data_type: TYPE_FP32
     dims: [-1,3,-1,-1 ]  # Height, Width, Channels
+  },
+  {
+    name: "mapped_boxes"
+    data_type: TYPE_INT32
+    dims: [-1,4]
   }
 ]
 
@@ -15,6 +20,11 @@ output [
     name: "OUTPUT_TEXT"
     data_type: TYPE_STRING
     dims: [ -1 ]
+  },
+  {
+    name: "mapped_det_bboxes"
+    data_type: TYPE_FP32
+    dims: [-1,4]
   }
 ]
 
